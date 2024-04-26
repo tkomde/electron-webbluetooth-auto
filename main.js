@@ -31,6 +31,7 @@ async function createWindow () {
       true
     );
 
+    /*
     keepConTimer = setTimeout(()=>{
       console.log(`Scan timeout. ${Date.now()}`)
       //Stop scan
@@ -39,6 +40,7 @@ async function createWindow () {
         keepConnected()
       },1000)
     },15000)
+    */
   }
 
   //Workaround: it seems that the event listener remains for some reason when you click on x on a Mac
@@ -69,14 +71,15 @@ async function createWindow () {
       status = response
       //Disconnected.
       if(response == 0){
-        keepConnected()
+        //keepConnected()
+
       //Put into connection sequence (scan stops)
       } else if(response == 3){
-        clearTimeout(keepConTimer)
+        //clearTimeout(keepConTimer)
       //Error during connection
       } else if(response == -1){
         console.log("Some connection error")
-        status = 0
+        //status = 0
       }
     })
 

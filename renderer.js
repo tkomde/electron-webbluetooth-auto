@@ -18,115 +18,86 @@ async function scanAndConnect () {
   window.electronAPI.connectionStatus(2)
   con_status = 2
   console.log("scanAndConnect presssed.")
-  await navigator.bluetooth.requestDevice({
-    filters: [{
-      services: [BLE_SERVICE_UUID] //only small char-case
-    }]
-  })
-  .then(device => {
-    window.electronAPI.connectionStatus(3)
-    con_status = 3
-    ble_device = device;
-    document.getElementById('device-name').innerHTML = device.name || `ID: ${ble_device.id}`
-    console.log(device);
-    device.addEventListener('gattserverdisconnected', onDisconnected);
-    return device.gatt.connect();
-  })
-  .then(server => {
-    console.log(server);
-    return server.getPrimaryService(BLE_SERVICE_UUID);
-  })
-  .then(service => {
-    console.log(service);
-    ble_service = service;
-    return Promise.all([
-      ble_service.getCharacteristic(BLE_NR_CHARACTERISTIC_UUID)
-        .then(characteristic => {
-          ble_nr_characteristics = characteristic;
-          ble_nr_characteristics.startNotifications();
-          //ble_nr_characteristics.addEventListener('characteristicvaluechanged', handleNotifications);
-          console.log("characteristic:", characteristic);
-        }),
-      ble_service.getCharacteristic(BLE_RW_CHARACTERISTIC_UUID)
-        .then(characteristic => {
-          window.electronAPI.connectionStatus(1)
-          con_status = 1
 
-          ble_rw_characteristics = characteristic;
-          console.log("characteristic:", characteristic);
-        })
-    ]);
-  })
-  .then(() => {
-    console.log("Completed BLE connection");
-  })
-  .catch(error => {
+  try {
+    console.log('Requesting any Bluetooth Device...');
+    ble_device = await navigator.bluetooth.requestDevice({
+      filters: [{
+        services: [BLE_SERVICE_UUID] //only small char-case
+      }]
+    });
+    ble_device.addEventListener('gattserverdisconnected', onDisconnected);
+    con_status = 3
+    document.getElementById('device-name').innerHTML = ble_device.name || `ID: ${ble_device.id}`
+    console.log(ble_device);
+    ble_device.addEventListener('gattserverdisconnected', onDisconnected);
+    connect();
+  } catch(error) {
     console.log(error)
     console.log(`con_status: ${con_status}`)
-    
-    // Sometimes connect succeeds but fails to get characteristic.
-    // Therefore, when an error occurs with con_status == 3, it is considered to be equivalent to disconnection and reconnect.
-    if(con_status == 3){
-      window.electronAPI.connectionStatus(0)
-    }else{
-      //not execute keepConnected() as Timer exist
-      window.electronAPI.connectionStatus(-1)
-    }
-
+    //not execute keepConnected() as Timer exist
+    window.electronAPI.connectionStatus(-1)
     con_status = 0
-  });
-
-};
-
-//To call in main
-window.scanAndConnect = scanAndConnect
-document.getElementById('scan_and_connect').addEventListener('click', scanAndConnect)
-
-
-function cancelRequest () {
-  //
-  console.log("cancelRequest presssed.")
-  window.electronAPI.cancelBluetoothRequest()
-}
-
-document.getElementById('cancel').addEventListener('click', cancelRequest)
-
-
-function disconnect () {
-  console.log("Disconnect pressed.")
-  ble_device.gatt.disconnect();
-}
-
-function onDisconnected(event) {
-  // Object event.target is Bluetooth Device getting disconnected.
-  console.log(`Bluetooth Device disconnected.`);
-  window.electronAPI.connectionStatus(0)
-}
-document.getElementById('disconnect').addEventListener('click', disconnect)
-
-
-window.electronAPI.bluetoothPairingRequest((event, details) => {
-  const response = {}
-
-  switch (details.pairingKind) {
-    case 'confirm': {
-      response.confirmed = window.confirm(`Do you want to connect to device ${details.deviceId}?`)
-      break
-    }
-    case 'confirmPin': {
-      response.confirmed = window.confirm(`Does the pin ${details.pin} match the pin displayed on device ${details.deviceId}?`)
-      break
-    }
-    case 'providePin': {
-      const pin = window.prompt(`Please provide a pin for ${details.deviceId}.`)
-      if (pin) {
-        response.pin = pin
-        response.confirmed = true
-      } else {
-        response.confirmed = false
-      }
-    }
   }
+}
+window.scanAndConnect = scanAndConnect
 
-  window.electronAPI.bluetoothPairingResponse(response)
-})
+
+async function toTry() {
+  time('Connecting to Bluetooth Device... ');
+  window.electronAPI.connectionStatus(3)
+  con_status = 3
+
+  //await ble_device.gatt.connect();
+  const server = await ble_device.gatt.connect();
+  console.log(server);
+  const service = await server.getPrimaryService(BLE_SERVICE_UUID);
+  console.log(service);
+  ble_rw_characteristics = await service.getCharacteristic(BLE_RW_CHARACTERISTIC_UUID)
+  console.log(ble_rw_characteristics)
+  ble_nr_characteristics = await service.getCharacteristic(BLE_NR_CHARACTERISTIC_UUID)
+  console.log(ble_nr_characteristics)
+  ble_nr_characteristics.startNotifications();
+  //ble_nr_characteristics.addEventListener('characteristicvaluechanged', handleNotifications);
+  window.electronAPI.connectionStatus(1)
+  con_status = 1
+  console.log("Completed BLE connection");
+}
+
+async function connect() {
+  exponentialBackoff(3 /* max retries */, 2 /* seconds delay */,
+    toTry,
+    function success() {},
+    function fail() {});
+}
+
+function onDisconnected() {
+  console.log('Bluetooth Device disconnected');
+  window.electronAPI.connectionStatus(0)
+  con_status = 0
+  connect();
+}
+
+/* Utils */
+
+// This function keeps calling "toTry" until promise resolves or has
+// retried "max" number of times. First retry has a delay of "delay" seconds.
+// "success" is called upon success.
+async function exponentialBackoff(max, delay, toTry, success, fail) {
+  try {
+    const result = await toTry();
+    success(result);
+  } catch(error) {
+    if (max === 0) {
+      return fail();
+    }
+    time('Retrying in ' + delay + 's... (' + max + ' tries left)');
+    setTimeout(function() {
+      exponentialBackoff(--max, delay * 2, toTry, success, fail);
+    }, delay * 1000);
+  }
+}
+
+function time(text) {
+  console.log('[' + new Date().toJSON().substr(11, 8) + '] ' + text);
+}
