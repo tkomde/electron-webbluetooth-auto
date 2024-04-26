@@ -7,3 +7,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   bluetoothPairingRequest: (callback) => ipcRenderer.on('bluetooth-pairing-request', () => callback()),
   bluetoothPairingResponse: (response) => ipcRenderer.send('bluetooth-pairing-response', response)
 })
+
+//console.log(`argv ${process.argv}`);
+const platform = process.argv
+  .filter((arg) => arg.startsWith("--platform="))[0]
+  ?.split("=")?.[1];
+
+//ex. window.platform = "darwin"
+contextBridge.exposeInMainWorld("platform", platform);

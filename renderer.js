@@ -43,8 +43,7 @@ async function scanAndConnect () {
 window.scanAndConnect = scanAndConnect
 
 
-async function toTry() {
-  time('Connecting to Bluetooth Device... ');
+async function unitTry() {
   window.electronAPI.connectionStatus(3)
   con_status = 3
 
@@ -66,16 +65,20 @@ async function toTry() {
 
 async function connect() {
   exponentialBackoff(3 /* max retries */, 2 /* seconds delay */,
-    toTry,
-    function success() {},
-    function fail() {});
+  unitTry,
+  function success() {},
+  function fail() {});
 }
 
 function onDisconnected() {
   console.log('Bluetooth Device disconnected');
   window.electronAPI.connectionStatus(0)
   con_status = 0
-  connect();
+
+  //Windows need connect not scan
+  if(window.platform === "win32"){
+      connect();
+  }
 }
 
 /* Utils */

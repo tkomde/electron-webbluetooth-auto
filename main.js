@@ -14,16 +14,17 @@ async function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
-    }
+      preload: path.join(__dirname, 'preload.js'),
+      additionalArguments: [`--platform=${process.platform}`], //pass preload
+    },
   })
 
   //open developer console
   mainWindow.webContents.openDevTools();
 
   //Rescan timer with disconnected state
-  function keepConnected(){
-    console.log(`Start keepConnected. ${Date.now()}`)
+  function keepScan(){
+    console.log(`Start keepScan. ${Date.now()}`)
 
     //Attempt to connect at startup
     mainWindow.webContents.executeJavaScript(
@@ -31,16 +32,14 @@ async function createWindow () {
       true
     );
 
-    /*
     keepConTimer = setTimeout(()=>{
       console.log(`Scan timeout. ${Date.now()}`)
       //Stop scan
       selectBluetoothCallback('')
       setTimeout(()=>{
-        keepConnected()
+        keepScan()
       },1000)
     },15000)
-    */
   }
 
   //Workaround: it seems that the event listener remains for some reason when you click on x on a Mac
@@ -69,17 +68,20 @@ async function createWindow () {
     ipcMain.on('connection-status', (event, response) => {
       console.log(`connection-status: ${response}`);
       status = response
+
       //Disconnected.
       if(response == 0){
-        //keepConnected()
-
+         //Mac need scan not connect 
+        if(process.platform==='darwin'){
+          keepScan()
+        }
       //Put into connection sequence (scan stops)
       } else if(response == 3){
-        //clearTimeout(keepConTimer)
+        clearTimeout(keepConTimer)
       //Error during connection
       } else if(response == -1){
         console.log("Some connection error")
-        //status = 0
+        status = 0
       }
     })
 
@@ -98,7 +100,7 @@ async function createWindow () {
 
   mainWindow.loadFile('index.html')
 
-  keepConnected()
+  keepScan()
 }
 
 app.whenReady().then(() => {

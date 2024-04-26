@@ -1,6 +1,7 @@
 # electron-webbluetooth-auto
 
-Automatically connect BLE device at app startup with electron.
+- Automatically connect BLE device at startup with electron.
+- Automatically reconnect BLE device with electron.
 
 ## Run
 
@@ -10,13 +11,11 @@ Automatically connect BLE device at app startup with electron.
 ## How it works
 
 - In main process, call renderer scanAndConnect() function by executeJavaScript() with userGesture = true 
-- Reconnect at...
-  - Disconnected.
-  - Scan timeout(Stop Scan once and Scan again.).
-
-## TODO
-
-It may be locked if it stops with con_status == 3.
+- Reconnection is done using a different approach because of the different behavior of each OS platform as follows
+  - In the case of Windows
+      - It is necessary to reconnect to a device instance that has already been obtained (even if another requestDevice() is made, it is not found).
+  - In case of Mac
+      - Devices that have been disconnected for a while are forgotten, so it is necessary to restart over again from requestDevice().
 
 ## Link
 
