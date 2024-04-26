@@ -68,10 +68,10 @@ async function createWindow () {
       console.log(`connection-status: ${response}`);
       status = response
       //Disconnected.
-      if(status == 0){
+      if(response == 0){
         keepConnected()
       //Put into connection sequence (scan stops)
-      } else if(status == 3){
+      } else if(response == 3){
         clearTimeout(keepConTimer)
       //Error during connection
       } else if(response == -1){
