@@ -32,6 +32,7 @@ async function createWindow () {
       true
     );
 
+    //Force stop and start scan as some OS automatically stop scan
     keepConTimer = setTimeout(()=>{
       console.log(`Scan timeout. ${Date.now()}`)
       //Stop scan
@@ -42,7 +43,7 @@ async function createWindow () {
     },15000)
   }
 
-  //Workaround: it seems that the event listener remains for some reason when you click on x on a Mac
+  //Workaround: it seems that the event listener remains for some reason when you click on x(close button) on a Mac
   if (createMainIsFirstTime) {
     createMainIsFirstTime = false;
 
@@ -71,7 +72,7 @@ async function createWindow () {
 
       //Disconnected.
       if(response == 0){
-         //Mac need scan not connect 
+         //Mac need scan, not connect 
         if(process.platform==='darwin'){
           keepScan()
         }

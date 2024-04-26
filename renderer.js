@@ -64,7 +64,7 @@ async function unitTry() {
 }
 
 async function connect() {
-  exponentialBackoff(3 /* max retries */, 2 /* seconds delay */,
+  exponentialBackoff(-1, 2,
   unitTry,
   function success() {},
   function fail() {});
@@ -86,6 +86,8 @@ function onDisconnected() {
 // This function keeps calling "toTry" until promise resolves or has
 // retried "max" number of times. First retry has a delay of "delay" seconds.
 // "success" is called upon success.
+
+//weaken backoff interal from original
 async function exponentialBackoff(max, delay, toTry, success, fail) {
   try {
     const result = await toTry();
@@ -96,7 +98,7 @@ async function exponentialBackoff(max, delay, toTry, success, fail) {
     }
     time('Retrying in ' + delay + 's... (' + max + ' tries left)');
     setTimeout(function() {
-      exponentialBackoff(--max, delay * 2, toTry, success, fail);
+      exponentialBackoff(--max, delay + 2, toTry, success, fail);
     }, delay * 1000);
   }
 }
