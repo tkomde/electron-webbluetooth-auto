@@ -9,7 +9,14 @@ Automatically connect BLE device at app startup with electron.
 
 ## How it works
 
-In main process, call renderer scanAndConnect() function by executeJavaScript() with userGesture = true 
+- In main process, call renderer scanAndConnect() function by executeJavaScript() with userGesture = true 
+- Reconnect at...
+  - Disconnected.
+  - Scan timeout(Stop Scan once and Scan again.).
+
+## TODO
+
+It may be locked if it stops with con_status == 3.
 
 ## Link
 

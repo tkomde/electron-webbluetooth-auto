@@ -6,6 +6,9 @@ let selectBluetoothCallback
 
 let createMainIsFirstTime = true;
 
+let status = 0; //0: disconnected, 1: connected, 2: attempting connect, 3: fetching services/charactistics
+let keepConTimer = null;
+
 async function createWindow () {
   const mainWindow = new BrowserWindow({
     width: 800,
@@ -17,6 +20,26 @@ async function createWindow () {
 
   //open developer console
   mainWindow.webContents.openDevTools();
+
+  //Rescan timer with disconnected state
+  function keepConnected(){
+    console.log(`Start keepConnected. ${Date.now()}`)
+
+    //Attempt to connect at startup
+    mainWindow.webContents.executeJavaScript(
+      `scanAndConnect();`,
+      true
+    );
+
+    keepConTimer = setTimeout(()=>{
+      console.log(`Scan timeout. ${Date.now()}`)
+      //Stop scan
+      selectBluetoothCallback('')
+      setTimeout(()=>{
+        keepConnected()
+      },1000)
+    },15000)
+  }
 
   //Workaround: it seems that the event listener remains for some reason when you click on x on a Mac
   if (createMainIsFirstTime) {
@@ -37,8 +60,26 @@ async function createWindow () {
     })
 
     ipcMain.on('cancel-bluetooth-request', (event) => {
+      //Cancel scan
       selectBluetoothCallback('')
     })
+
+    ipcMain.on('connection-status', (event, response) => {
+      console.log(`connection-status: ${response}`);
+      status = response
+      //Disconnected.
+      if(status == 0){
+        keepConnected()
+      //Put into connection sequence (scan stops)
+      } else if(status == 3){
+        clearTimeout(keepConTimer)
+      //Error during connection
+      } else if(response == -1){
+        console.log("Some connection error")
+        status = 0
+      }
+    })
+
 
     // Listen for a message from the renderer to get the response for the Bluetooth pairing.
     ipcMain.on('bluetooth-pairing-response', (event, response) => {
@@ -54,11 +95,7 @@ async function createWindow () {
 
   mainWindow.loadFile('index.html')
 
-  //Attempt to connect at startup
-  await mainWindow.webContents.executeJavaScript(
-    `scanAndConnect();`,
-    true
-  );
+  keepConnected()
 }
 
 app.whenReady().then(() => {
@@ -72,3 +109,4 @@ app.whenReady().then(() => {
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit()
 })
+
