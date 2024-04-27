@@ -30,7 +30,6 @@ async function scanAndConnect () {
     con_status = 3
     document.getElementById('device-name').innerHTML = ble_device.name || `ID: ${ble_device.id}`
     console.log(ble_device);
-    ble_device.addEventListener('gattserverdisconnected', onDisconnected);
     connect();
   } catch(error) {
     console.log(error)
@@ -64,7 +63,7 @@ async function unitTry() {
 }
 
 async function connect() {
-  exponentialBackoff(-1, 2,
+  exponentialBackoff(-1, 15,
   unitTry,
   function success() {},
   function fail() {});
@@ -98,7 +97,7 @@ async function exponentialBackoff(max, delay, toTry, success, fail) {
     }
     time('Retrying in ' + delay + 's... (' + max + ' tries left)');
     setTimeout(function() {
-      exponentialBackoff(--max, delay + 2, toTry, success, fail);
+      exponentialBackoff(--max, delay * 1, toTry, success, fail);
     }, delay * 1000);
   }
 }
