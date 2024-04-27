@@ -106,3 +106,11 @@ async function exponentialBackoff(max, delay, toTry, success, fail) {
 function time(text) {
   console.log('[' + new Date().toJSON().substr(11, 8) + '] ' + text);
 }
+
+document.getElementById("scan_and_connect").addEventListener('click',scanAndConnect)
+document.getElementById("cancel").addEventListener('click',()=>{
+  window.electronAPI.cancelBluetoothRequest()
+})
+document.getElementById("disconnect").addEventListener('click',()=>{
+  ble_device.gatt.disconnect();
+})
