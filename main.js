@@ -16,6 +16,7 @@ async function createWindow () {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       additionalArguments: [`--platform=${process.platform}`], //pass preload
+      //experimentalFeatures: true , //in case of Linux
     },
   })
 
@@ -73,7 +74,7 @@ async function createWindow () {
       //Disconnected.
       if(response == 0){
          //Mac need scan, not connect 
-        if(process.platform==='darwin'){
+        if(process.platform==='darwin' || process.platform==='linux'){
           keepScan()
         }
       //Put into connection sequence (scan stops)
